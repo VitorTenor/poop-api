@@ -83,24 +83,32 @@ public class ShitterClient implements ShitterGateway {
             var shitEventList = new ArrayList<ShitEventModel>();
             var startDate = new AtomicReference<>(dates.getFirst());
 
-            dates.forEach(
-                    value -> {
-                        if (Boolean.TRUE.equals(startDate.get().isAfter(value))) {
-                            startDate.set(value);
-                        }
-
-                        var shitEvent = new ShitEventModel();
-                        shitEvent.setDateTime(value);
-                        shitEvent.setShitter(shitter);
-                        shitEvent.setPeriod(DayPeriod.classify(value));
-                        shitEventList.add(shitEvent);
-                    }
-            );
+            this.buildShitEventList(shitter, dates, shitEventList, startDate);
 
             shitter.setStartDate(startDate.get());
             shitterRepository.save(shitter);
             shitEventRepository.saveAll(shitEventList);
         });
+    }
+
+    private void buildShitEventList(ShitterModel shitter, List<LocalDateTime> dates, ArrayList<ShitEventModel> shitEventList, AtomicReference<LocalDateTime> startDate) {
+        dates.forEach(
+                value -> {
+                    if (Boolean.TRUE.equals(startDate.get().isAfter(value))) {
+                        startDate.set(value);
+                    }
+                    var shitEvent = this.createShitEvent(shitter, value);
+                    shitEventList.add(shitEvent);
+                }
+        );
+    }
+
+    private ShitEventModel createShitEvent(ShitterModel shitter, LocalDateTime dateTime) {
+        var shitEvent = new ShitEventModel();
+        shitEvent.setDateTime(dateTime);
+        shitEvent.setShitter(shitter);
+        shitEvent.setPeriod(DayPeriod.classify(dateTime));
+        return shitEvent;
     }
 
     private ShitterModel findByNameOrCreate(String key) {
