@@ -4,6 +4,7 @@ import com.vitortenorio.poop_api.api.v1.model.ShitEventModel;
 import com.vitortenorio.poop_api.api.v1.model.ShitterModel;
 import com.vitortenorio.poop_api.api.v1.repository.ShitEventRepository;
 import com.vitortenorio.poop_api.api.v1.repository.ShitterRepository;
+import com.vitortenorio.poop_api.entity.ShitterEntity;
 import com.vitortenorio.poop_api.entity.ShitterRankingEntity;
 import com.vitortenorio.poop_api.entity.UploadShitterImageEntity;
 import com.vitortenorio.poop_api.enums.DayPeriod;
@@ -53,8 +54,23 @@ public class ShitterClient implements ShitterGateway {
         ).toList();
     }
 
+    @Override
+    public List<ShitterEntity> shitters() {
+        return shitterRepository.findAll().stream()
+                .map(st -> new ShitterEntity(st.getName())).toList();
+    }
+
+    @Override
+    public ShitterEntity shitter(String name) {
+        return shitterRepository.findByNameIgnoreCase(name)
+                .map(st -> new ShitterEntity(st.getName()))
+                .orElseThrow(
+                        () -> new ShitterException("Shitter not found")
+                );
+    }
+
     private ShitterModel findShitterByName(String name) {
-        return shitterRepository.findByName(name)
+        return shitterRepository.findByNameIgnoreCase(name)
                 .orElseThrow(
                         () -> new ShitterException("Shitter not found")
                 );
@@ -62,25 +78,24 @@ public class ShitterClient implements ShitterGateway {
 
     @Transactional
     public void buildAndSave(Map<String, List<LocalDateTime>> data){
-        data.forEach((key, values) -> {
-            var shitter = this.findByNameOrCreate(key);
-
+        data.forEach((name, dates) -> {
+            var shitter = this.findByNameOrCreate(name);
             var shitEventList = new ArrayList<ShitEventModel>();
+            var startDate = new AtomicReference<>(dates.getFirst());
 
-            var startDate = new AtomicReference<>(values.getFirst());
+            dates.forEach(
+                    value -> {
+                        if (Boolean.TRUE.equals(startDate.get().isAfter(value))) {
+                            startDate.set(value);
+                        }
 
-            for (LocalDateTime value : values) {
-                var shitEvent = new ShitEventModel();
-
-                if (Boolean.TRUE.equals(startDate.get().isAfter(value))) {
-                    startDate.set(value);
-                }
-
-                shitEvent.setDateTime(value);
-                shitEvent.setShitter(shitter);
-                shitEvent.setPeriod(DayPeriod.classify(value));
-                shitEventList.add(shitEvent);
-            }
+                        var shitEvent = new ShitEventModel();
+                        shitEvent.setDateTime(value);
+                        shitEvent.setShitter(shitter);
+                        shitEvent.setPeriod(DayPeriod.classify(value));
+                        shitEventList.add(shitEvent);
+                    }
+            );
 
             shitter.setStartDate(startDate.get());
             shitterRepository.save(shitter);
@@ -89,7 +104,7 @@ public class ShitterClient implements ShitterGateway {
     }
 
     private ShitterModel findByNameOrCreate(String key) {
-        return shitterRepository.findByName(key)
+        return shitterRepository.findByNameIgnoreCase(key)
                 .orElseGet(() -> {
                     var shitter = new ShitterModel();
                     shitter.setName(key);

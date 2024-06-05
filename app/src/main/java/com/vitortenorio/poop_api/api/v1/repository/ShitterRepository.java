@@ -23,5 +23,5 @@ public interface ShitterRepository extends JpaRepository<ShitterModel, Long> {
         )
         List<ShitterRankingMapper> findTop3ShittersWithMostEvents();
 
-        Optional<ShitterModel> findByName(String s);
+        Optional<ShitterModel> findByNameIgnoreCase(String s);
 }
