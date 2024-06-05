@@ -13,7 +13,7 @@ public class GetShitterUseCase {
         this.shitterGateway = shitterGateway;
     }
 
-    public ShitterEntity execute(String name) {
+    public ShitterEntity execute(final String name) {
         return shitterGateway.shitter(name);
     }
 }

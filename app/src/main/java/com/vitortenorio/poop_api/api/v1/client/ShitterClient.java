@@ -61,13 +61,13 @@ public class ShitterClient implements ShitterGateway {
     }
 
     @Override
-    public ShitterEntity shitter(String name) {
+    public ShitterEntity shitter(final String name) {
         return new ShitterEntity(
                 this.findShitterByName(name).getName()
         );
     }
 
-    private ShitterModel findShitterByName(String name) {
+    private ShitterModel findShitterByName(final String name) {
         return shitterRepository.findByNameIgnoreCase(name)
                 .orElseThrow(
                         () -> new ShitterException("Shitter not found")

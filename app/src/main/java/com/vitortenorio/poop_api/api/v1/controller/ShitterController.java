@@ -47,7 +47,7 @@ public class ShitterController {
     }
 
     @GetMapping("/{name}")
-    public ShitterOutput shitter(@PathVariable String name) {
+    public ShitterOutput shitter(@PathVariable final String name) {
         return shitterAssembler.toOutput(
                 getShitterUseCase.execute(name)
         );
